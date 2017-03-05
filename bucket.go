@@ -16,11 +16,11 @@ func resourceS3Bucket() *schema.Resource {
 		Delete: resourceS3BucketDelete,
 
 		Schema: map[string]*schema.Schema{
-			"bucket": &schema.Schema{
+			"bucket": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"debug": &schema.Schema{
+			"debug": {
 				Type:     schema.TypeBool,
 				Required: false,
 			},
@@ -66,8 +66,11 @@ func resourceS3BucketRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceS3BucketUpdate(d *schema.ResourceData, meta interface{}) error {
 	debug := d.Get("debug").(bool)
+	bucket := d.Get("bucket").(string)
+	region := meta.(*s3Client).region
 	if debug {
-		log.Printf("[DEBUG] Bucket update operation not implemented")
+		log.Printf("[DEBUG] Bucket update operation not implemented. Bucket: [%s], Region: [%s]",
+			bucket, region)
 	}
 	return nil
 }

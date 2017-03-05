@@ -9,40 +9,40 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"s3_server": &schema.Schema{
+			"s3_server": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "S3 Server",
 			},
-			"s3_region": &schema.Schema{
+			"s3_region": {
 				Type:        schema.TypeString,
 				Required:    false,
 				Default:     "us-east-1",
 				Description: "S3 Server region (default: us-east-1)",
 			},
-			"s3_access_key": &schema.Schema{
+			"s3_access_key": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "S3 Server Access Key",
 			},
-			"s3_secret_key": &schema.Schema{
+			"s3_secret_key": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "S3 Server Secret Key",
 			},
-			"s3_api_signature": &schema.Schema{
+			"s3_api_signature": {
 				Type:        schema.TypeString,
 				Required:    false,
 				Default:     "v4",
 				Description: "S3 Server API Signature (type: string, options: v4 or v4, default: v4",
 			},
-			"s3_ssl": &schema.Schema{
+			"s3_ssl": {
 				Type:        schema.TypeBool,
 				Required:    false,
 				Default:     false,
 				Description: "Use SSL to connect to the S3 Server? (default: false)",
 			},
-			"s3_debug": &schema.Schema{
+			"s3_debug": {
 				Type:        schema.TypeBool,
 				Required:    false,
 				Default:     false,
