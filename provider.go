@@ -52,6 +52,8 @@ func Provider() terraform.ResourceProvider {
 
 		ResourcesMap: map[string]*schema.Resource{
 			"s3_bucket": resourceS3Bucket(),
+			"s3_object": resourceS3Object(),
+			"s3_file": resourceS3File(),
 		},
 
 		ConfigureFunc: providerConfigure,
