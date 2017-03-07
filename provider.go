@@ -34,7 +34,7 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Required:    false,
 				Default:     "v4",
-				Description: "S3 Server API Signature (type: string, options: v4 or v4, default: v4",
+				Description: "S3 Server API Signature (type: string, options: v2 or v4, default: v4)",
 			},
 			"s3_ssl": {
 				Type:        schema.TypeBool,

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
