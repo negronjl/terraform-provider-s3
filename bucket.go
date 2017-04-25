@@ -39,9 +39,10 @@ func resourceS3BucketCreate(d *schema.ResourceData, meta interface{}) error {
 		log.Printf("[DEBUG] Creating bucket: [%s] in region: [%s]", bucket, region)
 	}
 
-	if s3_client.MakeBucket(bucket, region) != nil {
-		log.Printf("[FATAL] Unable to create bucket [%s] in region [%s]", bucket, region)
-		return errors.New(fmt.Sprintf("Unable to create bucket [%s] in region [%s]", bucket, region))
+	err := s3_client.MakeBucket(bucket, region)
+	if err != nil {
+		log.Printf("[FATAL] Unable to create bucket [%s] in region [%s].  Failed with error: %v", bucket, region, err)
+		return errors.New(fmt.Sprintf("Unable to create bucket [%s] in region [%s].  Failed with error: %v", bucket, region, err))
 	}
 	if debug {
 		log.Printf("[DEBUG] Created bucket: [%s] in region: [%s]", bucket, region)

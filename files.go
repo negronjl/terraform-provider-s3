@@ -57,8 +57,8 @@ func resourceS3FileCreate(d *schema.ResourceData, meta interface{}) error {
 
 	_, err := s3_client.FPutObject(bucket, name, file_path, content_type)
 	if err != nil {
-		log.Printf("[FATAL] Unable to create object [%s]", name)
-		return errors.New(fmt.Sprintf("Unable to create object [%s]", name))
+		log.Printf("[FATAL] Unable to create object [%s]. Error: %v", name, err)
+		return errors.New(fmt.Sprintf("Unable to create object [%s].  Error: %v", name, err))
 	}
 
 	if debug {
@@ -82,8 +82,8 @@ func resourceS3FileRead(d *schema.ResourceData, meta interface{}) error {
 
 	err := s3_client.FGetObject(bucket, name, file_path)
 	if err != nil {
-		log.Printf("[FATAL]  Unable to read file [%s] from bucket [%s] into file [%s]", name, bucket, file_path)
-		return errors.New(fmt.Sprintf("Unable to read file [%s]", name))
+		log.Printf("[FATAL]  Unable to read file [%s] from bucket [%s] into file [%s].  Error: %v", name, bucket, file_path, err)
+		return errors.New(fmt.Sprintf("Unable to read file [%s].  Error: %v", name, err))
 	}
 
 	if debug {
@@ -108,12 +108,12 @@ func resourceS3FileDelete(d *schema.ResourceData, meta interface{}) error {
 
 	err := s3_client.RemoveObject(bucket, name)
 	if err != nil {
-		log.Printf("[FATAL] Unable to delete file [%s] from bucket [%s]", name, bucket)
-		return errors.New(fmt.Sprintf("Unable to delete file [%s] from bucket [%s]", name, bucket))
+		log.Printf("[FATAL] Unable to delete file [%s] from bucket [%s].  Error: %v", name, bucket, err)
+		return errors.New(fmt.Sprintf("Unable to delete file [%s] from bucket [%s].  Error: %v", name, bucket, err))
 	}
 
 	if debug {
-		log.Printf("[DEBUG] Deleted file [%s] fro bucket [%s]", name, bucket)
+		log.Printf("[DEBUG] Deleted file [%s] from bucket [%s]", name, bucket)
 	}
 	return nil
 }
