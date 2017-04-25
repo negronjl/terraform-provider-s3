@@ -7,5 +7,6 @@
     <orderEntry type="library" scope="PROVIDED" name="Go SDK" level="project" />
     <orderEntry type="library" name="GOPATH &lt;terraform-provider-s3&gt;" level="project" />
     <orderEntry type="library" name="GOPATH &lt;terraform-provider-s3&gt;" level="project" />
+    <orderEntry type="library" name="GOPATH &lt;terraform-provider-s3&gt;" level="project" />
   </component>
 </module>

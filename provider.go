@@ -16,7 +16,7 @@ func Provider() terraform.ResourceProvider {
 			},
 			"s3_region": {
 				Type:        schema.TypeString,
-				Required:    false,
+				Optional:    true,
 				Default:     "us-east-1",
 				Description: "S3 Server region (default: us-east-1)",
 			},
@@ -32,19 +32,19 @@ func Provider() terraform.ResourceProvider {
 			},
 			"s3_api_signature": {
 				Type:        schema.TypeString,
-				Required:    false,
+				Optional:    true,
 				Default:     "v4",
 				Description: "S3 Server API Signature (type: string, options: v2 or v4, default: v4)",
 			},
 			"s3_ssl": {
 				Type:        schema.TypeBool,
-				Required:    false,
+				Optional:    true,
 				Default:     false,
 				Description: "Use SSL to connect to the S3 Server? (default: false)",
 			},
 			"s3_debug": {
 				Type:        schema.TypeBool,
-				Required:    false,
+				Optional:    true,
 				Default:     false,
 				Description: "Print debugging informatioin (default: false)",
 			},
@@ -53,7 +53,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"s3_bucket": resourceS3Bucket(),
 			"s3_object": resourceS3Object(),
-			"s3_file": resourceS3File(),
+			"s3_file":   resourceS3File(),
 		},
 
 		ConfigureFunc: providerConfigure,

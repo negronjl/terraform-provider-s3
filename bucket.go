@@ -22,7 +22,8 @@ func resourceS3Bucket() *schema.Resource {
 			},
 			"debug": {
 				Type:     schema.TypeBool,
-				Required: false,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}

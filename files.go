@@ -8,7 +8,6 @@ import (
 	"fmt"
 )
 
-
 func resourceS3File() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceS3FileCreate,
@@ -26,17 +25,18 @@ func resourceS3File() *schema.Resource {
 				Required: true,
 			},
 			"file_path": {
-				Type: schema.TypeString,
+				Type:     schema.TypeString,
 				Required: true,
 			},
 			"content_type": {
-				Type: schema.TypeString,
-				Required: false,
-				Default: "application/octet-stream",
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "application/octet-stream",
 			},
 			"debug": {
 				Type:     schema.TypeBool,
-				Required: false,
+				Optional: true,
+				Default:  true,
 			},
 		},
 	}
@@ -55,7 +55,7 @@ func resourceS3FileCreate(d *schema.ResourceData, meta interface{}) error {
 			name, file_path, bucket)
 	}
 
-	_, err := s3_client.FPutObject(bucket, name, file_path,content_type)
+	_, err := s3_client.FPutObject(bucket, name, file_path, content_type)
 	if err != nil {
 		log.Printf("[FATAL] Unable to create object [%s]", name)
 		return errors.New(fmt.Sprintf("Unable to create object [%s]", name))
@@ -63,7 +63,7 @@ func resourceS3FileCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if debug {
 		log.Printf("[DEBUG] Created object [%s] from file [%s] in bucket [%s]",
-		name, file_path, bucket)
+			name, file_path, bucket)
 	}
 
 	return nil
