@@ -1,9 +1,8 @@
 package main
 
 import (
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
-
 
 func resourceS3Object() *schema.Resource {
 	return &schema.Resource{
@@ -22,11 +21,11 @@ func resourceS3Object() *schema.Resource {
 				Required: true,
 			},
 			"content": {
-				Type: schema.TypeString,
+				Type:     schema.TypeString,
 				Required: true,
 			},
 			"content_type": {
-				Type: schema.TypeString,
+				Type:     schema.TypeString,
 				Required: true,
 			},
 		},
