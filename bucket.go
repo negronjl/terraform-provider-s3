@@ -1,11 +1,10 @@
 package main
 
 import (
-	"errors"
 	"log"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func resourceS3Bucket() *schema.Resource {
@@ -33,16 +32,16 @@ func resourceS3BucketCreate(d *schema.ResourceData, meta interface{}) error {
 	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	region := meta.(*s3Client).region
-	s3_client := meta.(*s3Client).s3Client
+	client := meta.(*s3Client).s3Client
 
 	if debug {
 		log.Printf("[DEBUG] Creating bucket: [%s] in region: [%s]", bucket, region)
 	}
 
-	err := s3_client.MakeBucket(bucket, region)
+	err := client.MakeBucket(bucket, region)
 	if err != nil {
 		log.Printf("[FATAL] Unable to create bucket [%s] in region [%s].  Failed with error: %v", bucket, region, err)
-		return errors.New(fmt.Sprintf("Unable to create bucket [%s] in region [%s].  Failed with error: %v", bucket, region, err))
+		return fmt.Errorf("Unable to create bucket [%s] in region [%s].  Failed with error: %v", bucket, region, err)
 	}
 	if debug {
 		log.Printf("[DEBUG] Created bucket: [%s] in region: [%s]", bucket, region)
@@ -54,14 +53,14 @@ func resourceS3BucketRead(d *schema.ResourceData, meta interface{}) error {
 	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	region := meta.(*s3Client).region
-	s3_client := meta.(*s3Client).s3Client
+	client := meta.(*s3Client).s3Client
 	if debug {
 		log.Printf("[DEBUG] Reading bucket [%s] in region [%s]", bucket, region)
 	}
-	found, err := s3_client.BucketExists(bucket)
+	found, err := client.BucketExists(bucket)
 	if !found {
-		return errors.New(fmt.Sprintf("[FATAL] Unable to find bucket [%s] in region [%s].  Error: %v",
-			bucket, region, err))
+		return fmt.Errorf("[FATAL] Unable to find bucket [%s] in region [%s].  Error: %v",
+			bucket, region, err)
 	}
 	return nil
 }
@@ -81,13 +80,13 @@ func resourceS3BucketDelete(d *schema.ResourceData, meta interface{}) error {
 	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	region := meta.(*s3Client).region
-	s3_client := meta.(*s3Client).s3Client
+	client := meta.(*s3Client).s3Client
 	if debug {
 		log.Printf("[DEBUG] Deleting bucket [%s] from region [%s]", bucket, region)
 	}
-	if s3_client.RemoveBucket(bucket) != nil {
-		log.Printf("[FATAL]  Unable to remove bucket [%s].")
-		return errors.New(fmt.Sprintf("[FATAL] Unable to remove bucket [%s]", bucket))
+	if client.RemoveBucket(bucket) != nil {
+		log.Printf("[FATAL]  Unable to remove bucket [%s].", bucket)
+		return fmt.Errorf("[FATAL] Unable to remove bucket [%s]", bucket)
 	}
 	return nil
 }

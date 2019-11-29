@@ -7,14 +7,15 @@ import (
 	"github.com/minio/minio-go/v6"
 )
 
+// Config represents the s3 client connection string information.
 type Config struct {
-	s3_server     string
-	s3_region     string
-	s3_access_key string
-	s3_secret_key string
-	api_signature string
-	ssl           bool
-	debug         bool
+	server       string
+	region       string
+	accessKey    string
+	secretKey    string
+	apiSignature string
+	ssl          bool
+	debug        bool
 }
 
 type s3Client struct {
@@ -22,6 +23,7 @@ type s3Client struct {
 	s3Client *minio.Client
 }
 
+// NewClient generates a new s3 client from a Config struct.
 func (c *Config) NewClient() (interface{}, error) {
 
 	// Debug
@@ -30,52 +32,52 @@ func (c *Config) NewClient() (interface{}, error) {
 	}
 
 	// S3 Server
-	if len(c.s3_server) < 1 {
+	if len(c.server) < 1 {
 		log.Println("[FATAL] S3 Server undefined!")
-		return nil, errors.New("S3 Server not defined!")
+		return nil, errors.New("no S3 Server not defined")
 	}
 	if c.debug {
-		log.Printf("[DEBUG] S3 Server: [%s]", c.s3_server)
+		log.Printf("[DEBUG] S3 Server: [%s]", c.server)
 	}
 
 	// S3 Region
-	if len(c.s3_region) < 1 {
+	if len(c.region) < 1 {
 		if c.debug {
 			log.Println("S3 Region not defined.  Using default value of [us-east-1]")
 		}
-		c.s3_region = "us-east-1"
+		c.region = "us-east-1"
 	}
 	if c.debug {
-		log.Printf("[DEBUG] S3 Region: [%s]", c.s3_region)
+		log.Printf("[DEBUG] S3 Region: [%s]", c.region)
 	}
 
 	// S3 Access Key
-	if len(c.s3_access_key) < 1 {
+	if len(c.accessKey) < 1 {
 		log.Println("[FATAL] S3 Access Key not defined!")
-		return nil, errors.New("S3 Access Key not defined!")
+		return nil, errors.New("no S3 Access Key defined")
 	}
 	if c.debug {
-		log.Printf("[DEBUG] S3 Access Key: [%s]", c.s3_access_key)
+		log.Printf("[DEBUG] S3 Access Key: [%s]", c.accessKey)
 	}
 
 	// S3 Secret Key
-	if len(c.s3_secret_key) < 1 {
+	if len(c.secretKey) < 1 {
 		log.Println("[FATAL] S3 Secret Key not defined!")
-		return nil, errors.New("S3 Secret Key not defined!")
+		return nil, errors.New("no S3 Secret Key not defined")
 	}
 	if c.debug {
-		log.Printf("[DEBUG] S3 Secret Key: [%s]", c.s3_secret_key)
+		log.Printf("[DEBUG] S3 Secret Key: [%s]", c.secretKey)
 	}
 
 	// API Signature
-	if len(c.api_signature) < 1 {
+	if len(c.apiSignature) < 1 {
 		if c.debug {
 			log.Println("[DEBUG] API Signature not defined.  Using default value of [v4]")
 		}
-		c.api_signature = "v4"
+		c.apiSignature = "v4"
 	}
 	if c.debug {
-		log.Printf("[DEBUG] API Signature: [%s]", c.api_signature)
+		log.Printf("[DEBUG] API Signature: [%s]", c.apiSignature)
 	}
 
 	// SSL
@@ -86,24 +88,24 @@ func (c *Config) NewClient() (interface{}, error) {
 	// Initialize minio client object.
 	minioClient := new(minio.Client)
 	var err error
-	if c.api_signature == "v2" {
-		minioClient, err = minio.NewV2(c.s3_server, c.s3_access_key, c.s3_secret_key, c.ssl)
-	} else if c.api_signature == "v4" {
-		minioClient, err = minio.NewV4(c.s3_server, c.s3_access_key, c.s3_secret_key, c.ssl)
+	if c.apiSignature == "v2" {
+		minioClient, err = minio.NewV2(c.server, c.accessKey, c.secretKey, c.ssl)
+	} else if c.apiSignature == "v4" {
+		minioClient, err = minio.NewV4(c.server, c.accessKey, c.secretKey, c.ssl)
 	} else {
-		minioClient, err = minio.New(c.s3_server, c.s3_access_key, c.s3_secret_key, c.ssl)
+		minioClient, err = minio.New(c.server, c.accessKey, c.secretKey, c.ssl)
 	}
 	if err != nil {
 		log.Println("[FATAL] Error connecting to S3 server.")
 		return nil, err
-	} else {
-		if c.debug {
-			log.Printf("[DEBUG] S3 client initialized")
-		}
+	}
+
+	if c.debug {
+		log.Printf("[DEBUG] S3 client initialized")
 	}
 
 	return &s3Client{
-		region:   c.s3_region,
+		region:   c.region,
 		s3Client: minioClient,
 	}, nil
 }

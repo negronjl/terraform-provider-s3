@@ -8,6 +8,7 @@ import (
 	"log"
 )
 
+// Provider defines the contract for the provider definition.
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
@@ -128,13 +129,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		}
 	}
 	config := Config{
-		s3_server:     d.Get("s3_server").(string),
-		s3_region:     d.Get("s3_region").(string),
-		s3_access_key: accessKey,
-		s3_secret_key: secretKey,
-		api_signature: d.Get("s3_api_signature").(string),
-		ssl:           d.Get("s3_ssl").(bool),
-		debug:         d.Get("s3_debug").(bool),
+		server:       d.Get("s3_server").(string),
+		region:       d.Get("s3_region").(string),
+		accessKey:    accessKey,
+		secretKey:    secretKey,
+		apiSignature: d.Get("s3_api_signature").(string),
+		ssl:          d.Get("s3_ssl").(bool),
+		debug:        d.Get("s3_debug").(bool),
 	}
 	return config.NewClient()
 }
