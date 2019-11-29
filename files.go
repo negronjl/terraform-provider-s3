@@ -4,9 +4,10 @@ import (
 	"errors"
 	"log"
 
-	"github.com/hashicorp/terraform/helper/schema"
 	"fmt"
+	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/minio/minio-go"
+	"strings"
 )
 
 func resourceS3File() *schema.Resource {
@@ -27,7 +28,11 @@ func resourceS3File() *schema.Resource {
 			},
 			"file_path": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+			},
+			"content": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"content_type": {
 				Type:     schema.TypeString,
@@ -48,16 +53,30 @@ func resourceS3FileCreate(d *schema.ResourceData, meta interface{}) error {
 	bucket := d.Get("bucket").(string)
 	name := d.Get("name").(string)
 	file_path := d.Get("file_path").(string)
+	content := d.Get("content").(string)
 	content_type := d.Get("content_type").(string)
 	s3_client := meta.(*s3Client).s3Client
 
-	if debug {
-		log.Printf("[DEBUG] Creating object [%s] from file [%s] in bucket [%s]",
-			name, file_path, bucket)
+	var err error
+	if file_path != "" {
+		if debug {
+			log.Printf("[DEBUG] Creating object [%s] from file [%s] in bucket [%s]",
+				name, file_path, bucket)
+		}
+
+		_, err = s3_client.FPutObject(bucket, name, file_path,
+			minio.PutObjectOptions{ContentType: content_type})
+	} else {
+		if debug {
+			log.Printf("[DEBUG] Creating object [%s] from [%d] bytes of content in bucket [%s]",
+				name, len(content), bucket)
+		}
+
+		reader := strings.NewReader(content)
+		_, err = s3_client.PutObject(bucket, name, reader, reader.Size(),
+			minio.PutObjectOptions{ContentType: content_type})
 	}
 
-	_, err := s3_client.FPutObject(bucket, name, file_path,
-		minio.PutObjectOptions{ContentType: content_type})
 	if err != nil {
 		log.Printf("[FATAL] Unable to create object [%s]. Error: %v", name, err)
 		return errors.New(fmt.Sprintf("Unable to create object [%s].  Error: %v", name, err))
