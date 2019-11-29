@@ -1,9 +1,11 @@
 package main
 
 import (
-	"log"
-	"github.com/hashicorp/terraform/terraform"
+	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/terraform"
+	homedir "github.com/mitchellh/go-homedir"
+	"log"
 )
 
 func Provider() terraform.ResourceProvider {
@@ -22,13 +24,23 @@ func Provider() terraform.ResourceProvider {
 			},
 			"s3_access_key": {
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				Description: "S3 Server Access Key",
 			},
 			"s3_secret_key": {
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				Description: "S3 Server Secret Key",
+			},
+			"s3_shared_credentials_file": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "S3 Shared Credentials File",
+			},
+			"s3_profile": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "S3 Shared Credentials Profile Name",
 			},
 			"s3_api_signature": {
 				Type:        schema.TypeString,
@@ -65,11 +77,35 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	if debug {
 		log.Printf("[DEBUG] Initializing the S3 Provider")
 	}
+
+	access_key := d.Get("s3_acccess_key").(string)
+	secret_key := d.Get("s3_secret_key").(string)
+	path := d.Get("s3_shared_credentials_file").(string)
+	profile := d.Get("s3_profile").(string)
+
+	if access_key == "" || secret_key == "" {
+		if debug {
+			log.Printf("[DEBUG] s3_access_key or s3_secret_key is the empty string.  Looking for shared credentials file.")
+		}
+
+		credsPath, err := homedir.Expand(path)
+		if err != nil {
+			return nil, err
+		}
+
+		sharedCreds := awsCredentials.NewSharedCredentials(credsPath, profile)
+		creds, err := sharedCreds.Get()
+		if err != nil {
+			log.Printf("[ERROR] Error encountered retrieving profile `%s` from `%s`\n%s", profile, credsPath, err)
+		}
+		access_key = creds.AccessKeyID
+		secret_key = creds.SecretAccessKey
+	}
 	config := Config{
 		s3_server:     d.Get("s3_server").(string),
 		s3_region:     d.Get("s3_region").(string),
-		s3_access_key: d.Get("s3_access_key").(string),
-		s3_secret_key: d.Get("s3_secret_key").(string),
+		s3_access_key: access_key,
+		s3_secret_key: secret_key,
 		api_signature: d.Get("s3_api_signature").(string),
 		ssl:           d.Get("s3_ssl").(bool),
 		debug:         d.Get("s3_debug").(bool),
