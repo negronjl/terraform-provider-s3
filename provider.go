@@ -75,17 +75,38 @@ func Provider() terraform.ResourceProvider {
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	debug := d.Get("s3_debug").(bool)
 	if debug {
-		log.Printf("[DEBUG] Initializing the S3 Provider")
+		log.Printf("[INFO] Initializing the S3 Provider")
 	}
 
-	access_key := d.Get("s3_acccess_key").(string)
-	secret_key := d.Get("s3_secret_key").(string)
-	path := d.Get("s3_shared_credentials_file").(string)
-	profile := d.Get("s3_profile").(string)
+	accessKey := ""
+	secretKey := ""
+	path := ""
+	profile := ""
 
-	if access_key == "" || secret_key == "" {
+	if d.Get("s3_acccess_key") != nil {
+		accessKey = d.Get("s3_acccess_key").(string)
+	}
+
+	if d.Get("s3_secret_key") != nil {
+		secretKey = d.Get("s3_secret_key").(string)
+	}
+
+	if d.Get("s3_shared_credentials_file") != nil {
+		path = d.Get("s3_shared_credentials_file").(string)
+	}
+
+	if d.Get("s3_profile") != nil {
+		profile = d.Get("s3_profile").(string)
+	}
+
+	if debug {
+		log.Printf("[INFO] ACCESS_KEY: %s", accessKey)
+		log.Printf("[INFO] SECRET_KEY: %s", secretKey)
+	}
+
+	if accessKey == "" || secretKey == "" {
 		if debug {
-			log.Printf("[DEBUG] s3_access_key or s3_secret_key is the empty string.  Looking for shared credentials file.")
+			log.Printf("[INFO] s3_access_key or s3_secret_key is the empty string.  Looking for shared credentials file.")
 		}
 
 		credsPath, err := homedir.Expand(path)
@@ -98,14 +119,19 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		if err != nil {
 			log.Printf("[ERROR] Error encountered retrieving profile `%s` from `%s`\n%s", profile, credsPath, err)
 		}
-		access_key = creds.AccessKeyID
-		secret_key = creds.SecretAccessKey
+		accessKey = creds.AccessKeyID
+		secretKey = creds.SecretAccessKey
+
+		if debug {
+			log.Printf("[INFO] ACCESS_KEY: %s", accessKey)
+			log.Printf("[INFO] SECRET_KEY: %s", secretKey)
+		}
 	}
 	config := Config{
 		s3_server:     d.Get("s3_server").(string),
 		s3_region:     d.Get("s3_region").(string),
-		s3_access_key: access_key,
-		s3_secret_key: secret_key,
+		s3_access_key: accessKey,
+		s3_secret_key: secretKey,
 		api_signature: d.Get("s3_api_signature").(string),
 		ssl:           d.Get("s3_ssl").(bool),
 		debug:         d.Get("s3_debug").(bool),
