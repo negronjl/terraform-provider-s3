@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"crypto/sha512"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/minio/minio-go/v6"
@@ -25,15 +26,17 @@ func resourceS3File() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"filepath": {
+			"file_path": {
 				Type:     schema.TypeString,
+				Default:  "",
 				Optional: true,
 			},
 			"content": {
 				Type:     schema.TypeString,
+				Default:  "",
 				Optional: true,
 			},
-			"contentType": {
+			"content_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "application/octet-stream",
@@ -41,7 +44,7 @@ func resourceS3File() *schema.Resource {
 			"debug": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
+				Computed: true,
 			},
 		},
 	}
@@ -51,9 +54,9 @@ func resourceS3FileCreate(d *schema.ResourceData, meta interface{}) error {
 	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	name := d.Get("name").(string)
-	filepath := d.Get("filepath").(string)
+	filepath := d.Get("file_path").(string)
 	content := d.Get("content").(string)
-	contentType := d.Get("contentType").(string)
+	contentType := d.Get("content_type").(string)
 	client := meta.(*s3Client).s3Client
 
 	var err error
@@ -85,6 +88,19 @@ func resourceS3FileCreate(d *schema.ResourceData, meta interface{}) error {
 		log.Printf("[DEBUG] Created object [%s] from file [%s] in bucket [%s]",
 			name, filepath, bucket)
 	}
+	region, err := client.GetBucketLocation(bucket)
+	if err != nil {
+		log.Printf("[DEBUG] Could not retrieve bucket location for bucket [%s] at host [%s]", bucket, client.EndpointURL())
+		return fmt.Errorf("[DEBUG] Could not retrieve bucket location for bucket [%s] at host [%s]", bucket, client.EndpointURL())
+	}
+
+	idkeysource := fmt.Sprintf("ObjectKey [%s] Bucket: [%s] Region: [%s] Host: [%s]", name, bucket, region, client.EndpointURL())
+	id := fmt.Sprintf("%x", sha512.Sum512([]byte(idkeysource)))
+
+	d.SetId(id)
+	d.Set("endpointURL", client.EndpointURL())
+	d.Set("region", region)
+	d.Set("debug", debug)
 
 	return nil
 }
@@ -93,7 +109,7 @@ func resourceS3FileRead(d *schema.ResourceData, meta interface{}) error {
 	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	name := d.Get("name").(string)
-	filepath := d.Get("filepath").(string)
+	filepath := d.Get("file_path").(string)
 	client := meta.(*s3Client).s3Client
 
 	if debug {

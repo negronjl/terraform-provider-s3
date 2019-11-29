@@ -26,11 +26,13 @@ func Provider() terraform.ResourceProvider {
 			"s3_access_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 				Description: "S3 Server Access Key",
 			},
 			"s3_secret_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 				Description: "S3 Server Secret Key",
 			},
 			"s3_shared_credentials_file": {
@@ -54,6 +56,12 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Default:     false,
 				Description: "Use SSL to connect to the S3 Server? (default: false)",
+			},
+			"s3_ssl_insecure_ssl_skip_verify": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Skip SSL Host Verification.  (default: false)",
 			},
 			"s3_debug": {
 				Type:        schema.TypeBool,
@@ -135,6 +143,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		secretKey:    secretKey,
 		apiSignature: d.Get("s3_api_signature").(string),
 		ssl:          d.Get("s3_ssl").(bool),
+		insecure:     d.Get("s3_ssl_insecure_ssl_skip_verify").(bool),
 		debug:        d.Get("s3_debug").(bool),
 	}
 	return config.NewClient()

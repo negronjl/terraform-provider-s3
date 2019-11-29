@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"errors"
 	"log"
+	"net/http"
 
 	"github.com/minio/minio-go/v6"
 )
@@ -15,12 +17,24 @@ type Config struct {
 	secretKey    string
 	apiSignature string
 	ssl          bool
+	insecure     bool
+	sslIssuerPem string
 	debug        bool
 }
 
 type s3Client struct {
 	region   string
 	s3Client *minio.Client
+}
+
+func (c *Config) getRoundTripper() http.RoundTripper {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: c.insecure,
+	}
+	var h http.RoundTripper = &http.Transport{
+		TLSClientConfig: tlsConfig,
+	}
+	return h
 }
 
 // NewClient generates a new s3 client from a Config struct.
@@ -99,6 +113,8 @@ func (c *Config) NewClient() (interface{}, error) {
 		log.Println("[FATAL] Error connecting to S3 server.")
 		return nil, err
 	}
+
+	minioClient.SetCustomTransport(c.getRoundTripper())
 
 	if c.debug {
 		log.Printf("[DEBUG] S3 client initialized")

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"crypto/sha512"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -22,7 +23,7 @@ func resourceS3Bucket() *schema.Resource {
 			"debug": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				Computed: true,
 			},
 		},
 	}
@@ -43,6 +44,14 @@ func resourceS3BucketCreate(d *schema.ResourceData, meta interface{}) error {
 		log.Printf("[FATAL] Unable to create bucket [%s] in region [%s].  Failed with error: %v", bucket, region, err)
 		return fmt.Errorf("Unable to create bucket [%s] in region [%s].  Failed with error: %v", bucket, region, err)
 	}
+
+	idkeysource := fmt.Sprintf("Bucket: [%s] Region: [%s] Host: [%s]", bucket, region, client.EndpointURL())
+	id := fmt.Sprintf("%x", sha512.Sum512([]byte(idkeysource)))
+
+	d.SetId(id)
+	d.Set("endpointURL", client.EndpointURL())
+	d.Set("region", region)
+	d.Set("debug", debug)
 	if debug {
 		log.Printf("[DEBUG] Created bucket: [%s] in region: [%s]", bucket, region)
 	}
