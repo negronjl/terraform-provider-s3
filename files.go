@@ -6,7 +6,7 @@ import (
 
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/v6"
 	"strings"
 )
 

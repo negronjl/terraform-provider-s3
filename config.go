@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/v6"
 )
 
 type Config struct {
