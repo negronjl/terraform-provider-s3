@@ -2,8 +2,8 @@ package main
 
 import (
 	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/hashicorp/terraform-plugin-sdk"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
 	homedir "github.com/mitchellh/go-homedir"
 	"log"
 )
