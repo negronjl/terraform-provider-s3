@@ -3,10 +3,12 @@ package main
 import (
 	"log"
 
+	"bytes"
 	"crypto/sha512"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/minio/minio-go/v6"
+	"io/ioutil"
 	"strings"
 )
 
@@ -33,8 +35,8 @@ func resourceS3File() *schema.Resource {
 			},
 			"content": {
 				Type:     schema.TypeString,
-				Default:  "",
 				Optional: true,
+				Computed: true,
 			},
 			"content_type": {
 				Type:     schema.TypeString,
@@ -66,18 +68,18 @@ func resourceS3FileCreate(d *schema.ResourceData, meta interface{}) error {
 				name, filepath, bucket)
 		}
 
-		_, err = client.FPutObject(bucket, name, filepath,
-			minio.PutObjectOptions{ContentType: contentType})
-	} else {
-		if debug {
-			log.Printf("[DEBUG] Creating object [%s] from [%d] bytes of content in bucket [%s]",
-				name, len(content), bucket)
+		buf, err := ioutil.ReadFile(filepath)
+		if err != nil {
+			log.Printf("[FATAL] Unable to read file [%s].  Error %v", filepath, err)
+			return fmt.Errorf("[FATAL] Unable to read file [%s].  Error %v", filepath, err)
 		}
-
-		reader := strings.NewReader(content)
-		_, err = client.PutObject(bucket, name, reader, reader.Size(),
-			minio.PutObjectOptions{ContentType: contentType})
+		content := string(buf)
+		d.Set("content", content)
 	}
+
+	reader := strings.NewReader(content)
+	_, err = client.PutObject(bucket, name, reader, reader.Size(),
+		minio.PutObjectOptions{ContentType: contentType})
 
 	if err != nil {
 		log.Printf("[FATAL] Unable to create object [%s]. Error: %v", name, err)
@@ -109,18 +111,40 @@ func resourceS3FileRead(d *schema.ResourceData, meta interface{}) error {
 	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	name := d.Get("name").(string)
-	filepath := d.Get("file_path").(string)
 	client := meta.(*s3Client).s3Client
 
 	if debug {
-		log.Printf("[DEBUG] Reading file [%s] from bucket [%s] into file [%s]", name, bucket, filepath)
+		log.Printf("[DEBUG] Reading file [%s] from bucket [%s] into memory", name, bucket)
 	}
 
-	err := client.FGetObject(bucket, name, filepath, minio.GetObjectOptions{})
+	reader, err := client.GetObject(bucket, name, minio.GetObjectOptions{})
 	if err != nil {
-		log.Printf("[FATAL]  Unable to read file [%s] from bucket [%s] into file [%s].  Error: %v", name, bucket, filepath, err)
+		log.Printf("[FATAL]  Unable to read content [%s] from bucket [%s] into memory.  Error: %v", name, bucket, err)
 		return fmt.Errorf("Unable to read file [%s].  Error: %v", name, err)
 	}
+
+	defer reader.Close()
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(reader)
+
+	if err != nil {
+		log.Printf("[FATAL] Unable to read content from reader for content [%s] from bucket [%s] into memory.  Error %v", name, bucket, err)
+		return fmt.Errorf("[FATAL] Unable to read content from reader for content [%s] from bucket [%s] into memory.  Error %v", name, bucket, err)
+	}
+
+	region, err := client.GetBucketLocation(bucket)
+	if err != nil {
+		log.Printf("[FATAL] Unable to read region from bucket [%s].  Error %v", bucket, err)
+		return fmt.Errorf("[FATAL] Unable to read region from bucket [%s].  Error %v", bucket, err)
+	}
+
+	idkeysource := fmt.Sprintf("ObjectKey [%s] Bucket: [%s] Region: [%s] Host: [%s]", name, bucket, region, client.EndpointURL())
+	id := fmt.Sprintf("%x", sha512.Sum512([]byte(idkeysource)))
+
+	d.SetId(id)
+	d.Set("region", region)
+	d.Set("endpointURL", client.EndpointURL())
+	d.Set("content", buf.String())
 
 	if debug {
 		log.Printf("[DEBUG] Read file [%s] from bucket [%s]", name, bucket)

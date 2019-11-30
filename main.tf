@@ -13,14 +13,6 @@ resource "s3_bucket" certificates {
   bucket = "certificates"
 }
 
-resource "s3_file" "readme" {
-  bucket = "${s3_bucket.certificates.bucket}"
-  name    = "test.lab.ryezone.com.private_key.md"
-  content_type = "text/plain"
-  file_path = "README.md"
-}
-
-
 resource "s3_file" "private_key_pem" {
   bucket = "${s3_bucket.certificates.bucket}"
   name    = "test.lab.ryezone.com.private_key.pem"
@@ -54,4 +46,12 @@ PfZ+G6Z6h7mjem0Y+iWlkYcV4PIWL1iwBi8saCbGS5jN2p8M+X+Q7UNKEkROb3N6
 KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 -----END CERTIFICATE-----
 EOF
+}
+
+
+resource "s3_file" "readme" {
+  bucket = "${s3_bucket.certificates.bucket}"
+  name    = "test.lab.ryezone.com.private_key.md"
+  content_type = "text/plain"
+  file_path = "README.md"
 }
