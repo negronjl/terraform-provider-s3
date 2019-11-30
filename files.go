@@ -79,7 +79,7 @@ func resourceS3FileCreate(d *schema.ResourceData, meta interface{}) error {
 			log.Printf("[FATAL] Unable to read file [%s].  Error %v", filepath, err)
 			return fmt.Errorf("[FATAL] Unable to read file [%s].  Error %v", filepath, err)
 		}
-		content := string(buf)
+		content = string(buf)
 		d.Set("content", content)
 	}
 
