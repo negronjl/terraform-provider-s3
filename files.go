@@ -53,13 +53,19 @@ func resourceS3File() *schema.Resource {
 }
 
 func resourceS3FileCreate(d *schema.ResourceData, meta interface{}) error {
-	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	name := d.Get("name").(string)
 	filepath := d.Get("file_path").(string)
 	content := d.Get("content").(string)
 	contentType := d.Get("content_type").(string)
 	client := meta.(*s3Client).s3Client
+
+	_, debugExists := d.GetOk("debug")
+	debug := meta.(*s3Client).debug
+	if debugExists {
+		debug = d.Get("debug").(bool)
+	}
+	d.Set("debug", debug)
 
 	var err error
 	if filepath != "" {

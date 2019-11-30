@@ -24,6 +24,7 @@ type Config struct {
 
 type s3Client struct {
 	region   string
+	debug    bool
 	s3Client *minio.Client
 }
 
@@ -122,6 +123,7 @@ func (c *Config) NewClient() (interface{}, error) {
 
 	return &s3Client{
 		region:   c.region,
+		debug:    c.debug,
 		s3Client: minioClient,
 	}, nil
 }

@@ -30,10 +30,15 @@ func resourceS3Bucket() *schema.Resource {
 }
 
 func resourceS3BucketCreate(d *schema.ResourceData, meta interface{}) error {
-	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	region := meta.(*s3Client).region
 	client := meta.(*s3Client).s3Client
+	_, debugExists := d.GetOk("debug")
+	debug := meta.(*s3Client).debug
+	if debugExists {
+		debug = d.Get("debug").(bool)
+	}
+	d.Set("debug", debug)
 
 	if debug {
 		log.Printf("[DEBUG] Creating bucket: [%s] in region: [%s]", bucket, region)
@@ -51,7 +56,7 @@ func resourceS3BucketCreate(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(id)
 	d.Set("endpointURL", client.EndpointURL())
 	d.Set("region", region)
-	d.Set("debug", debug)
+
 	if debug {
 		log.Printf("[DEBUG] Created bucket: [%s] in region: [%s]", bucket, region)
 	}
