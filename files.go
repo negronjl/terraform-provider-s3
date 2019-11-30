@@ -1,12 +1,15 @@
 package main
 
 import (
-	"errors"
 	"log"
 
-	"github.com/hashicorp/terraform/helper/schema"
+	"bytes"
+	"crypto/sha512"
 	"fmt"
-	"github.com/minio/minio-go"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/minio/minio-go/v6"
+	"io/ioutil"
+	"strings"
 )
 
 func resourceS3File() *schema.Resource {
@@ -27,7 +30,13 @@ func resourceS3File() *schema.Resource {
 			},
 			"file_path": {
 				Type:     schema.TypeString,
-				Required: true,
+				Default:  "",
+				Optional: true,
+			},
+			"content": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"content_type": {
 				Type:     schema.TypeString,
@@ -37,36 +46,69 @@ func resourceS3File() *schema.Resource {
 			"debug": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
+				Computed: true,
 			},
 		},
 	}
 }
 
 func resourceS3FileCreate(d *schema.ResourceData, meta interface{}) error {
-	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	name := d.Get("name").(string)
-	file_path := d.Get("file_path").(string)
-	content_type := d.Get("content_type").(string)
-	s3_client := meta.(*s3Client).s3Client
+	filepath := d.Get("file_path").(string)
+	content := d.Get("content").(string)
+	contentType := d.Get("content_type").(string)
+	client := meta.(*s3Client).s3Client
 
-	if debug {
-		log.Printf("[DEBUG] Creating object [%s] from file [%s] in bucket [%s]",
-			name, file_path, bucket)
+	_, debugExists := d.GetOk("debug")
+	debug := meta.(*s3Client).debug
+	if debugExists {
+		debug = d.Get("debug").(bool)
+	}
+	d.Set("debug", debug)
+
+	var err error
+	if filepath != "" {
+		if debug {
+			log.Printf("[DEBUG] Creating object [%s] from file [%s] in bucket [%s]",
+				name, filepath, bucket)
+		}
+
+		buf, err := ioutil.ReadFile(filepath)
+		if err != nil {
+			log.Printf("[FATAL] Unable to read file [%s].  Error %v", filepath, err)
+			return fmt.Errorf("[FATAL] Unable to read file [%s].  Error %v", filepath, err)
+		}
+		content = string(buf)
+		d.Set("content", content)
 	}
 
-	_, err := s3_client.FPutObject(bucket, name, file_path,
-		minio.PutObjectOptions{ContentType: content_type})
+	reader := strings.NewReader(content)
+	_, err = client.PutObject(bucket, name, reader, reader.Size(),
+		minio.PutObjectOptions{ContentType: contentType})
+
 	if err != nil {
 		log.Printf("[FATAL] Unable to create object [%s]. Error: %v", name, err)
-		return errors.New(fmt.Sprintf("Unable to create object [%s].  Error: %v", name, err))
+		return fmt.Errorf("Unable to create object [%s].  Error: %v", name, err)
 	}
 
 	if debug {
 		log.Printf("[DEBUG] Created object [%s] from file [%s] in bucket [%s]",
-			name, file_path, bucket)
+			name, filepath, bucket)
 	}
+	region, err := client.GetBucketLocation(bucket)
+	if err != nil {
+		log.Printf("[DEBUG] Could not retrieve bucket location for bucket [%s] at host [%s]", bucket, client.EndpointURL())
+		return fmt.Errorf("[DEBUG] Could not retrieve bucket location for bucket [%s] at host [%s]", bucket, client.EndpointURL())
+	}
+
+	idkeysource := fmt.Sprintf("ObjectKey [%s] Bucket: [%s] Region: [%s] Host: [%s]", name, bucket, region, client.EndpointURL())
+	id := fmt.Sprintf("%x", sha512.Sum512([]byte(idkeysource)))
+
+	d.SetId(id)
+	d.Set("endpointURL", client.EndpointURL())
+	d.Set("region", region)
+	d.Set("debug", debug)
 
 	return nil
 }
@@ -75,18 +117,40 @@ func resourceS3FileRead(d *schema.ResourceData, meta interface{}) error {
 	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	name := d.Get("name").(string)
-	file_path := d.Get("file_path").(string)
-	s3_client := meta.(*s3Client).s3Client
+	client := meta.(*s3Client).s3Client
 
 	if debug {
-		log.Printf("[DEBUG] Reading file [%s] from bucket [%s] into file [%s]", name, bucket, file_path)
+		log.Printf("[DEBUG] Reading file [%s] from bucket [%s] into memory", name, bucket)
 	}
 
-	err := s3_client.FGetObject(bucket, name, file_path, minio.GetObjectOptions{})
+	reader, err := client.GetObject(bucket, name, minio.GetObjectOptions{})
 	if err != nil {
-		log.Printf("[FATAL]  Unable to read file [%s] from bucket [%s] into file [%s].  Error: %v", name, bucket, file_path, err)
-		return errors.New(fmt.Sprintf("Unable to read file [%s].  Error: %v", name, err))
+		log.Printf("[FATAL]  Unable to read content [%s] from bucket [%s] into memory.  Error: %v", name, bucket, err)
+		return fmt.Errorf("Unable to read file [%s].  Error: %v", name, err)
 	}
+
+	defer reader.Close()
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(reader)
+
+	if err != nil {
+		log.Printf("[FATAL] Unable to read content from reader for content [%s] from bucket [%s] into memory.  Error %v", name, bucket, err)
+		return fmt.Errorf("[FATAL] Unable to read content from reader for content [%s] from bucket [%s] into memory.  Error %v", name, bucket, err)
+	}
+
+	region, err := client.GetBucketLocation(bucket)
+	if err != nil {
+		log.Printf("[FATAL] Unable to read region from bucket [%s].  Error %v", bucket, err)
+		return fmt.Errorf("[FATAL] Unable to read region from bucket [%s].  Error %v", bucket, err)
+	}
+
+	idkeysource := fmt.Sprintf("ObjectKey [%s] Bucket: [%s] Region: [%s] Host: [%s]", name, bucket, region, client.EndpointURL())
+	id := fmt.Sprintf("%x", sha512.Sum512([]byte(idkeysource)))
+
+	d.SetId(id)
+	d.Set("region", region)
+	d.Set("endpointURL", client.EndpointURL())
+	d.Set("content", buf.String())
 
 	if debug {
 		log.Printf("[DEBUG] Read file [%s] from bucket [%s]", name, bucket)
@@ -102,16 +166,16 @@ func resourceS3FileDelete(d *schema.ResourceData, meta interface{}) error {
 	debug := d.Get("debug").(bool)
 	bucket := d.Get("bucket").(string)
 	name := d.Get("name").(string)
-	s3_client := meta.(*s3Client).s3Client
+	client := meta.(*s3Client).s3Client
 
 	if debug {
 		log.Printf("[DEBUG] Deleting file [%s] from bucket [%s]", name, bucket)
 	}
 
-	err := s3_client.RemoveObject(bucket, name)
+	err := client.RemoveObject(bucket, name)
 	if err != nil {
 		log.Printf("[FATAL] Unable to delete file [%s] from bucket [%s].  Error: %v", name, bucket, err)
-		return errors.New(fmt.Sprintf("Unable to delete file [%s] from bucket [%s].  Error: %v", name, bucket, err))
+		return fmt.Errorf("Unable to delete file [%s] from bucket [%s].  Error: %v", name, bucket, err)
 	}
 
 	if debug {
