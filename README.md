@@ -24,6 +24,8 @@ The provider requires some variables to be configured in order to gain access to
 * **s3_region**: S3 Server region (default: us-east-1)
 * **s3_access_key**: S3 Server Access Key
 * **s3_secret_key**: S3 Server Secret Key
+* **s3_shared_credentials_file**: Path to S3 Shared AWS Credentials file.
+* **s3_profile**: Name of the profile to load from the Shared AWS Credetials file.
 * **s3_api_signature**: S3 Server API Signature (type: string, options: v2 or v4, default: v4)
 * Supported cloud storage providers:
    * AWS Signature Version 4
@@ -37,8 +39,8 @@ The provider requires some variables to be configured in order to gain access to
 * **s3_ssl**: Connect using SSL
 * **s3_debug**: Enable Debug messages
 
-#### `s3`
-```
+#### s3 using access and secret keys
+```terraform
 provider "s3" {
     s3_server        = "http://localhost:9000"
     s3_region        = "custom-region-1"
@@ -50,12 +52,34 @@ provider "s3" {
 }
 ```
 
+#### minio using shared credentials and profile
+
+Credentials File:  `~/.aws/credentials `
+```
+[myProfileName]
+aws_access_key_id = access-key-here
+aws_secret_access_key = secret-key-here
+```
+
+Terraform configuration:  `./main.tf`
+```terraform
+provider "s3" {
+  s3_server                  = "localhost:9000"
+  s3_shared_credentials_file = "~/.aws/credentials"
+  s3_profile                 = "myProfileName"
+  s3_region                  = "us-east-1"
+  s3_api_signature           = "v4"
+  s3_ssl                     = false
+  s3_debug                   = true
+}
+```
+
 ### Resource Configuration (s3_bucket)
 ```s3_bucket``` resources represent a bucket in the S3 server.  It requires a bucket name to operate:
 
 * **bucket**: Name of the bucket to use
 
-```
+```terraform
 resource "s3_bucket" "resource_name" {
 	bucket = "my_bucket_name"
 }
@@ -67,14 +91,35 @@ resource "s3_bucket" "resource_name" {
 * **bucket**: Bucket in the S3 server
 * **name**: S3 Object name
 * **file_path**: Local file path where to read or save the object
+* **content**: Raw content to write to S3 Object.
 * **content_type**: The content type of the object.  Defaults to: ```application/octet-stream```
 * **debug**: Print debug messages
-```
+
+#### upload a file.
+
+```terraform
 resource "s3_file" "resource_name" {
     bucket       = "my_bucket_name"
     name         = "my_object_name"
     file_path    = /tmp/my_file.bin
     content_type = "application/octet-stream"
     debug        = true
+}
+```
+
+#### upload raw content
+
+```terraform
+resource "s3_file" "resource_name" {
+  bucket = "${s3_bucket.certificates.bucket}"
+  name    = "test.lab.ryezone.com.private_key.pem"
+  content_type = "text/plain"
+  content = <<EOF
+-----BEGIN CONTENT-----
+Content is better
+with multiple lines to share
+haiku examples
+-----END CONTENT-----
+EOF
 }
 ```

@@ -1,11 +1,11 @@
 provider "s3" {
-  s3_server                  = "d.freenas.lab.ryezone.com:9000"
-  s3_shared_credentials_file = "C:/Users/esten/source/.lab.ryezone.com/credentials"
-  s3_profile                 = "default"
+  s3_server                  = "localhost:9000"
+  s3_shared_credentials_file = "~/.aws/credentials"
+  s3_profile                 = "myProfileName"
   s3_region                  = "us-east-1"
   s3_api_signature = "v4"
-  s3_ssl           = true
-  s3_ssl_insecure_ssl_skip_verify = true
+  s3_ssl           = false
+  s3_ssl_insecure_ssl_skip_verify = false
   s3_debug         = true
 }
 
@@ -15,7 +15,7 @@ resource "s3_bucket" certificates {
 
 resource "s3_file" "private_key_pem" {
   bucket = "${s3_bucket.certificates.bucket}"
-  name    = "test.lab.ryezone.com.private_key.pem"
+  name    = "letsencrypt.issuer.pem"
   content_type = "text/plain"
   content = <<EOF
 -----BEGIN CERTIFICATE-----
