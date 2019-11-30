@@ -1,11 +1,14 @@
 provider "s3" {
-  s3_server                  = "localhost:9000"
+  s3_server                  = "d.freenas.lab.ryezone.com:9000"
+  # s3_access_key              = "access-key-here"  # Alternative to credentials file and profile.
+  # s3_secret_key              = "secret-key-here"  # Alternative to credentials file and profile.
   s3_shared_credentials_file = "~/.aws/credentials"
-  s3_profile                 = "myProfileName"
+  s3_profile                 = "default"
   s3_region                  = "us-east-1"
   s3_api_signature = "v4"
-  s3_ssl           = false
-  s3_ssl_insecure_ssl_skip_verify = false
+  s3_ssl           = true
+  # s3_ssl_insecure_ssl_skip_verify = true
+  # s3_ssl_issuer_pem = "~/.certificates/letsencrypt.issuer.pem"
   s3_debug         = true
 }
 
@@ -51,7 +54,7 @@ EOF
 
 resource "s3_file" "readme" {
   bucket = "${s3_bucket.certificates.bucket}"
-  name    = "test.lab.ryezone.com.private_key.md"
+  name    = "readme.md"
   content_type = "text/plain"
   file_path = "README.md"
 }

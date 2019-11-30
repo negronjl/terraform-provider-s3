@@ -63,6 +63,11 @@ func Provider() terraform.ResourceProvider {
 				Default:     false,
 				Description: "Skip SSL Host Verification.  (default: false)",
 			},
+			"s3_ssl_issuer_pem": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Path to PEM encoded Issuer CA Chain for the S3 Server SSL Certificate.",
+			},
 			"s3_debug": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -136,6 +141,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 			log.Printf("[INFO] SECRET_KEY: %s", secretKey)
 		}
 	}
+
+	issuerPEM, _ := homedir.Expand(d.Get("s3_ssl_issuer_pem").(string))
 	config := Config{
 		server:       d.Get("s3_server").(string),
 		region:       d.Get("s3_region").(string),
@@ -144,6 +151,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		apiSignature: d.Get("s3_api_signature").(string),
 		ssl:          d.Get("s3_ssl").(bool),
 		insecure:     d.Get("s3_ssl_insecure_ssl_skip_verify").(bool),
+		issuerPEM:    issuerPEM,
 		debug:        d.Get("s3_debug").(bool),
 	}
 	return config.NewClient()

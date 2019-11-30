@@ -37,6 +37,8 @@ The provider requires some variables to be configured in order to gain access to
       * Ceph Object Gateway
       * Riak CS
 * **s3_ssl**: Connect using SSL
+* **s3_ssl_insecure_ssl_skip_verify**: Ignore S3 Server SSL certificate validation errors.
+* **s3_ssl_issuer_pem**: Path to file containing PEM encoded certificate chain of the S3 Server's Certificate Authority.
 * **s3_debug**: Enable Debug messages
 
 #### s3 using access and secret keys

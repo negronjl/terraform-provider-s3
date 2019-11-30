@@ -2,7 +2,9 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -18,7 +20,7 @@ type Config struct {
 	apiSignature string
 	ssl          bool
 	insecure     bool
-	sslIssuerPem string
+	issuerPEM    string
 	debug        bool
 }
 
@@ -32,9 +34,36 @@ func (c *Config) getRoundTripper() http.RoundTripper {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: c.insecure,
 	}
+
+	if c.issuerPEM != "" {
+
+		// Get the SystemCertPool, continue with an empty pool on error
+		log.Printf("[DEBUG] loading system cert pool.")
+		rootCAs, _ := x509.SystemCertPool()
+		if rootCAs == nil {
+			log.Printf("[DEBUG] system cert pool not found.  Creating empty cert pool.")
+			rootCAs = x509.NewCertPool()
+		}
+
+		// Read in the cert file
+
+		certs, err := ioutil.ReadFile(c.issuerPEM)
+		if err != nil {
+			log.Fatalf("Failed to append %q to RootCAs: %v", c.issuerPEM, err)
+		}
+
+		// Append our cert to the system pool
+		if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+			log.Println("No certs appended, using system certs only")
+		}
+
+		tlsConfig.RootCAs = rootCAs
+	}
+
 	var h http.RoundTripper = &http.Transport{
 		TLSClientConfig: tlsConfig,
 	}
+
 	return h
 }
 
